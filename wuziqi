@@ -1,0 +1,812 @@
+package resource;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+
+import javax.swing.JPanel;
+
+public class DrawPanel extends JPanel{	
+	private int[][] a;
+	private int n,m;
+	
+	public DrawPanel(int k[][],int n1,int m1){
+		a=k;
+		n=n1;
+		m=m1;
+	}
+	
+	public void paintComponent(Graphics g){
+		super.paintComponent(g);
+		Graphics2D g2=(Graphics2D)g;
+		Graphics2D g3=(Graphics2D)g;
+		
+		double X=20;
+		double Y=20;
+		double width=480;
+		double height=480;			
+		double jiange=30;
+		
+		
+		
+		// 画棋盘网格
+		for(int i=0;i<=width/jiange;i++){
+			g2.draw(new Line2D.Double(X+i*jiange,Y,X+i*jiange,height+Y));
+			g2.draw(new Line2D.Double(X,Y+i*jiange,width+X,Y+i*jiange));
+		}		
+		//画中间点的标记
+		g3.setPaint(Color.RED);
+		g3.draw(new Line2D.Double(254,245,254,254));
+		g3.draw(new Line2D.Double(245,254,254,254));
+		g3.draw(new Line2D.Double(267,245,267,254));
+		g3.draw(new Line2D.Double(267,254,275,254));
+		
+		g3.draw(new Line2D.Double(245,266,254,266));
+		g3.draw(new Line2D.Double(254,266,254,275));
+		g3.draw(new Line2D.Double(266,275,266,266));
+		g3.draw(new Line2D.Double(266,266,275,266));
+		
+		//画旗子
+		for(int i=1;i<a.length-1;i++){
+			for(int j=1;j<a[i].length-1;j++){
+				Ellipse2D circle=new Ellipse2D.Double();
+				circle.setFrame(j*30-25, i*30-25, 28, 28);
+				if(a[i][j]==1){
+					g2.setPaint(Color.BLACK);
+					g2.fill(circle);
+				}else if(a[i][j]==2){
+					g2.setPaint(Color.WHITE);
+					g2.fill(circle);
+				}				
+			}
+		}
+		//画旗子上的标记
+		if(n>0&&m>0){
+			g2.setPaint(Color.RED);
+			g2.setStroke(new BasicStroke(1.5f)); 
+			g2.draw(new Line2D.Double(30*m-16,30*n-16,30*m-4,30*n-4));
+			g2.draw(new Line2D.Double(30*m-16,30*n-4,30*m-4,30*n-16));
+		}
+	}	
+}
+
+类PlayerVsPC代码：
+package resource;
+
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.Toolkit;
+import java.awt.Dimension;
+
+import javax.swing.JColorChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+
+public class PlayerVsPC {
+	private JFrame frame;	//整个窗口
+	private JMenuBar bar;	//菜单栏
+	private JMenuItem[][] jit;//菜单项数组
+	private JMenuItem[] mode;//模式项数组
+	private JMenu[] jm;		//菜单
+	public boolean isBlack;	//是否为黑方下子状态
+	private int[][] qipan;	//棋盘数组
+	private int row;		//当前行
+	private int col;		//当前列
+	private int prow;
+	private int pcol;
+	private Color c=new Color(145,125,62);		//棋盘背景颜色
+	private DrawPanel panel;	//棋盘面板
+	private JLabel label;		//棋盘上方的标签
+	private JPanel panel0;		//棋盘上方条形面板
+	private boolean isEnd;
+	private int[][] qixingPC;
+	private int[][] qixingPlayer;
+	private boolean isPC = true;  //记录当前下棋模式
+	private boolean cMode = true;	//记录选择的对弈模式
+
+	public PlayerVsPC(){
+		frame=new JFrame("五子棋游戏");
+		bar=new JMenuBar();
+		jm=new JMenu[2];
+		jit=new JMenuItem[2][];
+		qipan=new int[19][19];
+		qixingPC = new int[17][17];
+		qixingPlayer = new int[17][17];
+		for(int i=0;i<19;i++){
+			for(int j=0;j<19;j++){
+				qipan[i][j]=0;
+			}
+		}
+		for(int i=0;i<17;i++){
+			for(int j=0;j<17;j++){
+				qixingPC[i][j]=0;
+				qixingPlayer[i][j]=0;
+			}
+		}
+		label = new JLabel("人"+(isPC?"机":"人")+"对弈模式，请按开局开始游戏！");
+		panel0=new JPanel();	
+			
+		addItems();	
+		addEventAction();
+		printqipan(0,0);
+	}
+	
+	public void addItems(){				
+		jm[0]=new JMenu("游戏");
+		jm[1]=new JMenu("选项");
+		
+		jit[0]=new JMenuItem[3];
+		jit[0][0]=new JMenuItem("开局");
+		jit[0][1]=new JMenuItem("重新开始");
+		jit[0][2]=new JMenuItem("结束游戏"); 
+		
+		jit[1]=new JMenuItem[3];
+		jit[1][0]=new JMenu("对弈模式");
+		mode=new JMenuItem[2];
+		mode[0] = new JMenuItem("人人对弈");
+		mode[1] = new JMenuItem("人机对弈");
+		jit[1][0].add(mode[0]);
+		jit[1][0].add(mode[1]);
+		jit[1][1]=new JMenuItem("悔棋");
+		jit[1][2]=new JMenuItem("背景颜色");
+
+		for(int i=0;i<jm.length;i++){
+			for(int j=0;j<jit[i].length;j++){
+				jm[i].add(jit[i][j]);
+			}
+		}		
+		
+		panel0.add(label);
+		bar.add(jm[0]);
+		bar.add(jm[1]);
+		frame.setJMenuBar(bar);
+		frame.add(panel0,"North");	
+			
+	}
+	
+	//给菜单项设定事件
+	public void addEventAction(){	
+		jit[0][0].addActionListener(new ActionListener(){	//开局		
+			public void actionPerformed(ActionEvent e) {
+				row=prow=0;col=pcol=0;
+				isPC=cMode;
+				isBlack = true;
+				isEnd = false;
+				for(int i=0;i<19;i++){
+					for(int j=0;j<19;j++){
+						if(i==0||j==0||i==(qipan.length-1)||j==(qipan.length-1)){
+							qipan[i][j] = -1;
+						}else{
+							qipan[i][j]=0;
+						}
+					}
+				}
+				if(isPC){		//人机对弈模式
+					label.setText("游戏开始，请玩家先下棋！");
+				}else{		//人人对弈模式
+					label.setText("游戏开始，请"+(isBlack?"黑":"白")+"方先下棋！");
+				}
+				printqipan(row,col);
+				addEventHandler();
+			}			
+		});
+		jit[0][1].addActionListener(new ActionListener(){	//重新开始
+			public void actionPerformed(ActionEvent e) {
+				row=prow=0;col=pcol=0;
+				isBlack = true;
+				isEnd = false;
+				for(int i=0;i<19;i++){
+					for(int j=0;j<19;j++){
+						if(i==0||j==0||i==(qipan.length-1)||j==(qipan.length-1)){
+							qipan[i][j] = -1;
+						}else{
+							qipan[i][j]=0;
+						}
+					}
+				}
+				if(isPC){		//人机对弈模式
+					label.setText("游戏开始，请玩家先下棋！");
+				}else{		//人人对弈模式
+					label.setText("游戏开始，请"+(isBlack?"黑":"白")+"方先下棋！");
+				}
+				printqipan(row,col);
+				addEventHandler();
+			}			
+		});	
+		//给模式选项添加事件监听
+		mode[0].addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {	
+				cMode = false;
+				label.setText("已选择人"+(cMode?"机":"人")+"对弈模式，重新开局将生效！");		
+			}		
+		});
+		mode[1].addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e) {	
+				cMode = true;
+				label.setText("已选择人"+(cMode?"机":"人")+"对弈模式，重新开局将生效！");	
+			}		
+		});
+		
+		jit[0][2].addActionListener(new ActionListener(){	//结束游戏
+			public void actionPerformed(ActionEvent e) {				
+				label.setText("游戏结束，请按开局开始游戏！");
+				isEnd=true;				
+			}			
+		});
+		
+		jit[1][1].addActionListener(new ActionListener(){	//悔棋
+			public void actionPerformed(ActionEvent e) {
+				if(!isPC){
+					huiqi();	
+				}else{
+					pchuiqi();
+				}
+			}			
+		});	
+		
+		jit[1][2].addActionListener(new ActionListener() {	//背景颜色
+			public void actionPerformed(ActionEvent e) {
+				Color cc=JColorChooser.showDialog(frame,"棋盘背景颜色", 
+						new Color(226,189,0));
+				if(cc!=null){
+					c=cc;
+					panel.setBackground(c);
+				}				
+			}
+		});
+		
+	}
+	
+//	监听鼠标事件，下棋以及判断本盘是否结束，电脑是白方，玩家是黑方
+	public void addEventHandler(){
+		panel.addMouseListener(new MouseAdapter(){
+			public void mousePressed(MouseEvent e) {
+				if(!isEnd){
+					int x=(e.getX()-5)/30;
+					int y=(e.getY()-5)/30;	
+					if(qipan[y+1][x+1]==0){	
+						load(x+1,y+1);
+					}else{
+						label.setText("此处已经有棋子，请重新下子！");
+					}
+				}
+			}			
+		});	
+	}
+	
+	//电脑下棋
+	public void pcLoad(){
+		qixing();
+		int count = 0;
+		int hang = 0;
+		int lie = 0;
+		for(int i=0;i<17;i++){
+			for(int j=0;j<17;j++){
+				if(qixingPC[i][j]>count){
+					count = qixingPC[i][j];
+					hang = i+1;
+					lie = j+1;
+				}
+				if(qixingPlayer[i][j]>count){
+					count = qixingPlayer[i][j];
+					hang = i+1;
+					lie = j+1;
+				}
+			}
+		}
+		if(qipan[hang][lie]==0){
+			load(lie,hang);
+			return;
+		}
+		
+	}
+	
+	//下棋子
+	public void load(int x,int y){
+		col=x;
+		row=y;
+		if(isBlack){
+			prow=row;
+			pcol=col;
+			qipan[row][col]=1;
+			isBlack = false;
+		}else{
+			qipan[row][col]=2;
+			isBlack = true;
+		}
+		printqipan(row,col);
+		if(panduan(row-1,col-1)){
+			if(isPC){
+				label.setText("本局结束，恭喜"+(isBlack?"电脑":"玩家")+"获胜！");
+				isEnd = true;			
+			}else{
+				label.setText("本局结束，恭喜"+(isBlack?"黑":"白")+"方获胜！");
+				isEnd = true;
+			}
+		}else{
+			if(isPC){
+				label.setText((isBlack?"电脑":"玩家")+"在("+
+						row+":"+col+")处下子，"+"现在"+(isBlack?"玩家":"电脑")+"下子！");				
+			}else{
+				label.setText((isBlack?"白":"黑")+"方在("+
+						row+":"+col+")处下子，"+"现在"+(isBlack?"黑":"白")+"下子！");
+			}
+			if(!isBlack){
+				if(isPC){
+					pcLoad();					
+				}
+			}
+		}
+	}
+	
+	//刷新棋盘
+	public void printqipan(int n,int m){
+		panel=new DrawPanel(qipan,n,m);
+		panel.setBackground(c);
+		frame.add(panel,"Center");		
+	}
+	
+	//人人对弈悔棋
+	public void huiqi(){
+		if(isEnd){
+			label.setText("游戏已经结束不能悔棋，请重新开局！");
+			return;
+		}
+		isBlack=!isBlack;
+		qipan[row][col]=0;
+		printqipan(row,col);	
+		label.setText((isBlack?"黑":"白")+"方悔棋，请重新下棋！");
+	}
+	
+	//人机对弈悔棋
+	public void pchuiqi(){
+		if(isEnd){
+			label.setText("游戏已经结束不能悔棋，请重新开局！");
+			return;
+		}
+		qipan[row][col]=0;
+		qipan[prow][pcol]=0;
+		printqipan(row,col);	
+		label.setText((isBlack?"玩家":"电脑")+"悔棋，请重新下棋！");
+	}
+	
+	//算出双方的棋形数组
+	public void qixing(){
+		for(int i=0;i<17;i++){
+			for(int j=0;j<17;j++){
+				if(qipan[i+1][j+1]==0){//说明此处没有棋子
+					qixingPC[i][j] = heiheng(i,j,2)+heishu(i,j,2)+heizuoxie(i,j,2)+heiyouxie(i,j,2);
+					qixingPlayer[i][j] = heiheng(i,j,1)+heishu(i,j,1)+heizuoxie(i,j,1)+heiyouxie(i,j,1);
+				}else{
+					qixingPC[i][j] = 0;
+					qixingPlayer[i][j] = 0;
+				}
+			}
+		}
+	}
+	
+//  算出黑子横方向的棋型数值
+	public int heiheng(int hang,int lie,int num){
+		int k = 0;//记录空白处的个数
+		int count = 1;//记录可以形成几连
+		int n = hang+1;//对应棋盘的行
+		int m = lie+1;//对应棋盘的列
+		boolean left = false;//判断左边是否有黑子
+		boolean liveLeft = false;//判断左边是活还是死
+		boolean liveRight = false;//判断右边是活还是死
+		while((qipan[n][m-1]!=-1)&&(qipan[n][m-1]==num||qipan[n][m-1]==0)){
+			if(qipan[n][m-1]==0&&k<1){//第一个空白
+				if(qipan[n][m-2]!=num){
+					liveLeft = true;
+					break;
+				}
+				k++;
+				m--;
+			}else if(qipan[n][m-1]==num){//黑子
+				left = true;
+				m--;
+			}else{//第二个空白
+				liveLeft = true;
+				break;
+			}
+		}
+		if(!left){
+			k = 0;
+			m = lie+1;
+		}
+		while((qipan[n][m+1]!=-1)&&(qipan[n][m+1]==num||qipan[n][m+1]==0)){
+			int t = qipan[n][m+1];
+			if(m==lie){
+				count++;
+				m++;
+				continue;
+			}
+			if(t==0&&k<1){//第一个空白
+				if(qipan[n][m+2]!=num){
+					liveRight = true;
+					break;
+				}
+				k++;
+				m++;
+			}else if(t==0&&k>0){//第二个空白
+				liveRight = true;
+				break;
+			}else{//黑子
+				m++;
+				count++;
+			}
+		}
+		return jieguo(liveLeft,liveRight,count,k,num);
+	}
+	
+//	算出黑子竖方向的棋型数值
+	public int heishu(int hang,int lie,int num){
+		int k = 0;//记录空白处的个数
+		int count = 1;//记录可以形成几连
+		int n = hang+1;//对应棋盘的行
+		int m = lie+1;//对应棋盘的列
+		boolean top = false;//判断上边是否有黑子
+		boolean liveLeft = false;
+		boolean liveRight = false;
+		while((qipan[n-1][m]!=-1)&&(qipan[n-1][m]==num||qipan[n-1][m]==0)){
+			if(qipan[n-1][m]==0&&k<1){//第一个空白
+				if(qipan[n-2][m]!=num){
+					liveLeft = true;
+					break;
+				}
+				k++;
+				n--;
+			}else if(qipan[n-1][m]==num){//黑子
+				top = true;
+				n--;
+			}else{//第二个空白
+				liveLeft = true;
+				break;
+			}
+		}
+		if(!top){
+			k = 0;
+			n = hang+1;
+		}
+		while((qipan[n+1][m]!=-1)&&(qipan[n+1][m]==num||qipan[n+1][m]==0)){
+			int t = qipan[n+1][m];
+			if(n==hang){
+				count++;
+				n++;
+				continue;
+			}
+			if(t==0&&k<1){//第一个空白
+				if(qipan[n+2][m]!=num){
+					liveRight = true;
+					break;
+				}
+				k++;
+				n++;
+			}else if(t==0&&k>0){//第二个空白
+				liveRight = true;
+				break;
+			}else{//黑子
+				n++;
+				count++;
+			}
+		}
+		//return jieguo(k==0,count);
+		return jieguo(liveLeft,liveRight,count,k,num);
+	}
+	
+//	算出黑子左斜方向的棋型数值
+	public int heizuoxie(int hang,int lie,int num){
+		int k = 0;//记录空白处的个数
+		int count = 1;//记录可以形成几连
+		int n = hang+1;//对应棋盘的行
+		int m = lie+1;//对应棋盘的列
+		boolean top = false;//判断上边是否有黑子
+		boolean liveLeft = false;
+		boolean liveRight = false;
+		while((qipan[n+1][m-1]!=-1)&&(qipan[n+1][m-1]==num||qipan[n+1][m-1]==0)){
+			if(qipan[n+1][m-1]==0&&k<1){//第一个空白
+				if(qipan[n+2][m-2]!=num){
+					liveLeft = true;
+					break;
+				}
+				k++;
+				n++;
+				m--;
+			}else if(qipan[n+1][m-1]==num){//黑子
+				top = true;
+				n++;
+				m--;
+			}else{//第二个空白
+				liveLeft = true;
+				break;
+			}
+		}
+		if(!top){
+			k = 0;
+			n = hang+1;
+			m = lie+1;
+		}
+		while((qipan[n-1][m+1]!=-1)&&(qipan[n-1][m+1]==num||qipan[n-1][m+1]==0)){
+			int t = qipan[n-1][m+1];
+			if(n==(hang+2)&&m==lie){
+				count++;
+				n--;
+				m++;
+				continue;
+			}
+			if(t==0&&k<1){//第一个空白
+				if(qipan[n-2][m+2]!=num){
+					liveRight =  true;
+					break;
+				}
+				k++;
+				n--;
+				m++;
+			}else if(t==0&&k>0){//第二个空白
+				liveRight = true;
+				break;
+			}else{//黑子
+				n--;
+				m++;
+				count++;
+			}
+		}
+		return jieguo(liveLeft,liveRight,count,k,num);
+	}
+	
+//	算出黑子右斜方向的棋型数值
+	public int heiyouxie(int hang,int lie,int num){
+		int k = 0;//记录空白处的个数
+		int count = 1;//记录可以形成几连
+		int n = hang+1;//对应棋盘的行
+		int m = lie+1;//对应棋盘的列
+		boolean top = false;//判断上边是否有黑子
+		boolean liveLeft = false;
+		boolean liveRight = false;
+		while((qipan[n-1][m-1]!=-1)&&(qipan[n-1][m-1]==num||qipan[n-1][m-1]==0)){
+			if(qipan[n-1][m-1]==0&&k<1){//第一个空白
+				if(qipan[n-2][m-2]!=num){
+					liveLeft = true;
+					break;
+				}
+				k++;
+				n--;
+				m--;
+			}else if(qipan[n-1][m-1]==num){//黑子
+				top = true;
+				n--;
+				m--;
+			}else{//第二个空白
+				liveLeft = true;
+				break;
+			}
+		}
+		if(!top){
+			k = 0;
+			n = hang+1;
+			m = lie+1;
+		}
+		while((qipan[n+1][m+1]!=-1)&&(qipan[n+1][m+1]==num||qipan[n+1][m+1]==0)){
+			int t = qipan[n+1][m+1];
+			if(n==hang&&m==lie){
+				count++;
+				n++;
+				m++;
+				continue;
+			}
+			if(t==0&&k<1){//第一个空白
+				if(qipan[n+2][m+2]!=num){
+					liveRight = true;
+					break;
+				}
+				k++;
+				n++;
+				m++;
+			}else if(t==0&&k>0){//第二个空白
+				liveRight = true;
+				break;
+			}else{//黑子
+				n++;
+				m++;
+				count++;
+			}
+		}
+		return jieguo(liveLeft,liveRight,count,k,num);
+	}
+	
+	public int jieguo(boolean left,boolean right,int count,int k,int num){
+		if(count==1){
+			return 0;
+		}else if(count==2){
+			if(left&&right){
+				if(k==0){
+					if(num==2){
+						return 60;
+					}else{
+						return 50;
+					}					
+				}else{
+					if(num==2){
+						return 40;
+					}else{
+						return 35;
+					}
+				}
+			}else if(!left&&!right){
+				return 0;
+			}else{
+				return 10;
+			}
+		}else if(count==3){
+			if(left&&right){
+				if(k==0){
+					if(num==2){
+						return 950;
+					}else{
+						return 700;
+					}
+				}else{
+					if(num==2){
+						return 900;
+					}else{
+						return 650;
+					}
+				}
+			}else if(!left&&!right){
+				return 0;
+			}else{
+				return 100;
+			}
+		}else if(count==4){
+			if(left&&right){
+				if(k==0){
+					if(num==2){
+						return 6000;
+					}else{
+						return 3500;
+					}
+				}else{
+					if(num==2){
+						return 5000;
+					}else{
+						return 3000;
+					}
+				}
+			}else if(!left&&!right){
+				return 0;
+			}else{
+				if(k==0){
+					if(num==2){
+						return 4000;
+					}else{
+						return 800;
+					}
+				}else{
+					if(num==2){
+						return 3600;
+					}else{
+						return 750;
+					}
+				}
+			}
+		}else{
+			if(k==0){
+				if(num==2){
+					return 20000;
+				}else{
+					return 15000;
+				}
+			}else{
+				if(num==2){
+					return 10000;
+				}else{
+					return 3300;
+				}
+			}					
+		}
+	}
+	
+	public void showMe(){		
+		frame.setSize(530,600);
+		Toolkit kit = Toolkit.getDefaultToolkit();
+		Dimension screenSize = kit.getScreenSize();
+		int  width = screenSize.width;
+		int height = screenSize.height;
+		int x = (int)(width-600)/2;
+		int y = (int)(height-530)/2-50;
+		frame.setLocation(x,y);
+		frame.setVisible(true);
+		frame.setResizable(false);
+		frame.setDefaultCloseOperation(frame.EXIT_ON_CLOSE);
+	} 
+	
+	public static void main(String[] args) {
+		new PlayerVsPC().showMe();
+	}
+	
+	public boolean panduan(int n,int m){
+		if(heng(n,m)||shu(n,m)||zuoxie(n,m)||youxie(n,m)){
+			return true;
+		}
+		return false;
+	}	
+	
+	public boolean heng(int n,int m){
+		int i=n+1,j=m+1;
+		int count=1;
+		while(qipan[i][j-1]==qipan[n+1][m+1]){
+			j--;
+		}
+		while(qipan[i][j+1]==qipan[n+1][m+1]){
+			count++;
+			j++;
+		}
+		if(count>4){
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean shu(int n,int m){
+		int i=n+1,j=m+1;
+		int count=1;
+		while(qipan[i-1][j]==qipan[n+1][m+1]){
+			i--;
+		}
+		while(qipan[i+1][j]==qipan[n+1][m+1]){
+			count++;
+			i++;
+		}
+		if(count>4){
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean youxie(int n,int m){
+		int i=n+1,j=m+1;
+		int count=1;
+		while(qipan[i-1][j-1]==qipan[n+1][m+1]){
+			i--;
+			j--;
+		}
+		while(qipan[i+1][j+1]==qipan[n+1][m+1]){
+			count++;
+			i++;
+			j++;
+		}
+		if(count>4){
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean zuoxie(int n,int m){
+		int i=n+1,j=m+1;
+		int count=1;
+		while(qipan[i+1][j-1]==qipan[n+1][m+1]){
+			i++;
+			j--;
+		}
+		while(qipan[i-1][j+1]==qipan[n+1][m+1]){
+			count++;
+			i--;
+			j++;
+		}
+		if(count>4){
+			return true;
+		}
+		return false;
+	}
+	
+}
